@@ -1,6 +1,6 @@
-# 🚗 Tire Plug - QBCore (Smokey City Roleplay)
+# 🚗 Tire Plug - Qbox / QBCore (Smokey City Roleplay)
 
-A lightweight tire repair script for QBCore servers using `ox_inventory`, `ox_target`, and `lib` UI notifications. Created by **Smokey** from **Smokey City Roleplay**.
+A lightweight tire repair script for QBCore and Qbox servers using `ox_inventory`, `ox_target`, and `lib` UI notifications. Created by **Smokey** from **Smokey City Roleplay**.
 
 ---
 
