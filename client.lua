@@ -73,21 +73,25 @@ end)
 
 RegisterNetEvent('tire_plug:repairTire', function(vehicleNetId, tireIndex)
     local vehicle = NetToVeh(vehicleNetId)
-    if DoesEntityExist(vehicle) then
-        -- Try to fix slashed tire using external script
-        if exports['xt-slashtires'] and exports['xt-slashtires'].FixTire then
-            pcall(function()
-                exports['xt-slashtires']:FixTire(vehicle, tireIndex)
-            end)
-        end
-
-        -- Always fix shot/burst tires using native function
-        SetVehicleTyreFixed(vehicle, tireIndex)
-
-        lib.notify({ type = 'success', title = 'Success', description = 'Tire repaired.' })
-    else
+    if not DoesEntityExist(vehicle) then
         lib.notify({ type = 'error', title = 'Error', description = 'Vehicle not found.' })
+        return
     end
+
+    -- Always fix tire using native function
+    SetVehicleTyreFixed(vehicle, tireIndex)
+
+    -- Optional: Fix slashed tire if xt-slashtires is running
+    if GetResourceState('xt-slashtires') == 'started' then
+        local success, err = pcall(function()
+            exports['xt-slashtires']:FixTire(vehicle, tireIndex)
+        end)
+        if not success then
+            print("[tire_plug] xt-slashtires error:", err)
+        end
+    end
+
+    lib.notify({ type = 'success', title = 'Success', description = 'Tire repaired.' })
 end)
 
 exports.ox_target:addGlobalVehicle({
@@ -140,3 +144,4 @@ exports.ox_target:addGlobalVehicle({
         end
     }
 })
+
