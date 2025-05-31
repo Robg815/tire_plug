@@ -144,4 +144,3 @@ exports.ox_target:addGlobalVehicle({
         end
     }
 })
-
