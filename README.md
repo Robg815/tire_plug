@@ -66,7 +66,7 @@ Server: Smokey City Roleplay
 This resource is open-source and free to use under the MIT License. Proper credit is appreciated.
 
 💬 Support
-For help or questions, open an issue on the GitHub repository or join the Smokey City RP Discord (link coming soon).
+For help or questions, open an issue on the GitHub repository or join the Smokey City RP Discord (https://discord.gg/sja6DH79kq)
 
 
 
