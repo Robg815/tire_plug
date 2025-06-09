@@ -1,6 +1,8 @@
+local SCRIPT_VERSION = '1.0.0'  -- your current script version
+
 AddEventHandler('onResourceStart', function(resourceName)
     if GetCurrentResourceName() == resourceName then
-        print("[script:tire_plug] Script created by Smokey (client)")
+        print(("[script:tire_plug] Script created by Smokey (client) - Version %s"):format(SCRIPT_VERSION))
     end
 end)
 
