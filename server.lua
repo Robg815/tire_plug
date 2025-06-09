@@ -1,8 +1,31 @@
+local SCRIPT_VERSION = '1.0.0'  -- your current script version
+
 AddEventHandler('onResourceStart', function(resourceName)
     if GetCurrentResourceName() == resourceName then
-        print(("[tire_plug] Resource '%s' started successfully (Created by Smokey)"):format(resourceName))
+        print(("[tire_plug] Resource '%s' started successfully (Created by Smokey) - Version %s"):format(resourceName, SCRIPT_VERSION))
+
+        local versionCheckUrl = 'https://gist.githubusercontent.com/Robg815/b4d71e977dae3924ed76536b4144bbd4/raw/d15828b3a56f0c43b80753d47f83329a31282cf9/tire_plug_version.json'
+
+        PerformHttpRequest(versionCheckUrl, function(err, text, headers)
+            if err == 200 and text then
+                local success, data = pcall(function() return json.decode(text) end)
+                if success and data and data.latest_version then
+                    if data.latest_version ~= SCRIPT_VERSION then
+                        print(("[tire_plug] WARNING: Your version (%s) is outdated! Latest version is %s"):format(SCRIPT_VERSION, data.latest_version))
+                    else
+                        print("[tire_plug] You are running the latest version!")
+                    end
+                else
+                    print("[tire_plug] Failed to decode version check response.")
+                end
+            else
+                print(("[tire_plug] Failed to check latest version, HTTP error: %s"):format(err))
+            end
+        end, 'GET')
     end
 end)
+
+-- Your existing server code below:
 
 local QBCore = exports['qb-core']:GetCoreObject()
 local lastRepairTime = {}
