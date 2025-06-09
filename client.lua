@@ -4,31 +4,12 @@ AddEventHandler('onResourceStart', function(resourceName)
     end
 end)
 
-local function GetTyreLabel(index)
-    local labels = {
-        [0] = "Front Left",
-        [1] = "Front Right",
-        [4] = "Rear Left",
-        [5] = "Rear Right"
-    }
-    return labels[index] or nil
-end
-
-local function getBurstTires(vehicle)
-    local burstTires = {}
-    local standardTireIndices = {0, 1, 4, 5}
-
-    for _, i in ipairs(standardTireIndices) do
-        if IsVehicleTyreBurst(vehicle, i, false) then
-            table.insert(burstTires, {
-                label = GetTyreLabel(i),
-                tireIndex = i,
-            })
-        end
-    end
-
-    return burstTires
-end
+local tireBones = {
+    [0] = "wheel_lf",
+    [1] = "wheel_rf",
+    [4] = "wheel_lr",
+    [5] = "wheel_rr"
+}
 
 RegisterNetEvent('tire_plug:attemptRepair', function(vehicle, tireIndex)
     local hasItem = exports.ox_inventory:Search('count', 'tire_plug') > 0
@@ -44,15 +25,31 @@ RegisterNetEvent('tire_plug:attemptRepair', function(vehicle, tireIndex)
     end
 
     local ped = PlayerPedId()
+    local boneName = tireBones[tireIndex]
+    if not boneName then return end
+
+    local boneIndex = GetEntityBoneIndexByName(vehicle, boneName)
+    local boneCoords = GetWorldPositionOfEntityBone(vehicle, boneIndex)
+    local forwardVec = GetEntityForwardVector(vehicle)
+
+    -- Move the player to the correct spot
+    local repairPos = boneCoords + forwardVec * 0.5
+    local vehCoords = GetEntityCoords(vehicle)
+    local headingToVehicle = GetHeadingFromVector_2d(vehCoords.x - repairPos.x, vehCoords.y - repairPos.y)
+
+    SetEntityCoords(ped, repairPos.x, repairPos.y, repairPos.z - 0.9, false, false, false, false)
+    SetEntityHeading(ped, headingToVehicle)
+    FreezeEntityPosition(ped, true)
+
+    -- Animation
     local dict = "anim@amb@clubhouse@tutorial@bkr_tut_ig3@"
     local anim = "machinic_loop_mechandplayer"
-
     RequestAnimDict(dict)
     while not HasAnimDictLoaded(dict) do Wait(0) end
-
     TaskPlayAnim(ped, dict, anim, 8.0, -8.0, -1, 1, 0, false, false, false)
     PlaySoundFrontend(-1, "TOOLS", "MECHANIC", true)
 
+    -- Progress
     local success = lib.progressCircle({
         duration = 3500,
         label = "Repairing Tire...",
@@ -60,11 +57,13 @@ RegisterNetEvent('tire_plug:attemptRepair', function(vehicle, tireIndex)
         disable = { move = true, car = true },
         onCancel = function()
             ClearPedTasks(ped)
+            FreezeEntityPosition(ped, false)
             lib.notify({ type = 'error', title = 'Cancelled', description = 'Repair was cancelled.' })
         end
     })
 
     ClearPedTasks(ped)
+    FreezeEntityPosition(ped, false)
 
     if success then
         TriggerServerEvent('tire_plug:tryRepairTire', VehToNet(vehicle), tireIndex)
@@ -73,15 +72,10 @@ end)
 
 RegisterNetEvent('tire_plug:repairTire', function(vehicleNetId, tireIndex)
     local vehicle = NetToVeh(vehicleNetId)
-    if not DoesEntityExist(vehicle) then
-        lib.notify({ type = 'error', title = 'Error', description = 'Vehicle not found.' })
-        return
-    end
+    if not DoesEntityExist(vehicle) then return end
 
-    -- Always fix tire using native function
     SetVehicleTyreFixed(vehicle, tireIndex)
 
-    -- Optional: Fix slashed tire if xt-slashtires is running
     if GetResourceState('xt-slashtires') == 'started' then
         local success, err = pcall(function()
             exports['xt-slashtires']:FixTire(vehicle, tireIndex)
