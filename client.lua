@@ -11,7 +11,22 @@ local tireBones = {
     [5] = "wheel_rr"
 }
 
+local lockedTires = {} -- Format: ["netId_tireIndex"] = true
+
+RegisterNetEvent('tire_plug:lockTire', function(vehicleNetId, tireIndex, state)
+    local key = ("%s_%s"):format(vehicleNetId, tireIndex)
+    lockedTires[key] = state
+end)
+
 RegisterNetEvent('tire_plug:attemptRepair', function(vehicle, tireIndex)
+    local netId = VehToNet(vehicle)
+    local key = ("%s_%s"):format(netId, tireIndex)
+
+    if lockedTires[key] then
+        lib.notify({ type = 'info', title = 'Busy', description = "This tire is currently being repaired by another player." })
+        return
+    end
+
     local hasItem = exports.ox_inventory:Search('count', 'tire_plug') > 0
     if not hasItem then
         lib.notify({ type = 'error', title = 'Error', description = "You don't have a Tire Plug!" })
@@ -31,9 +46,8 @@ RegisterNetEvent('tire_plug:attemptRepair', function(vehicle, tireIndex)
     local boneIndex = GetEntityBoneIndexByName(vehicle, boneName)
     local boneCoords = GetWorldPositionOfEntityBone(vehicle, boneIndex)
     local forwardVec = GetEntityForwardVector(vehicle)
-
-    -- Move the player to the correct spot
     local repairPos = boneCoords + forwardVec * 0.5
+
     local vehCoords = GetEntityCoords(vehicle)
     local headingToVehicle = GetHeadingFromVector_2d(vehCoords.x - repairPos.x, vehCoords.y - repairPos.y)
 
@@ -41,7 +55,6 @@ RegisterNetEvent('tire_plug:attemptRepair', function(vehicle, tireIndex)
     SetEntityHeading(ped, headingToVehicle)
     FreezeEntityPosition(ped, true)
 
-    -- Animation
     local dict = "anim@amb@clubhouse@tutorial@bkr_tut_ig3@"
     local anim = "machinic_loop_mechandplayer"
     RequestAnimDict(dict)
@@ -49,7 +62,6 @@ RegisterNetEvent('tire_plug:attemptRepair', function(vehicle, tireIndex)
     TaskPlayAnim(ped, dict, anim, 8.0, -8.0, -1, 1, 0, false, false, false)
     PlaySoundFrontend(-1, "TOOLS", "MECHANIC", true)
 
-    -- Progress
     local success = lib.progressCircle({
         duration = 3500,
         label = "Repairing Tire...",
@@ -66,7 +78,8 @@ RegisterNetEvent('tire_plug:attemptRepair', function(vehicle, tireIndex)
     FreezeEntityPosition(ped, false)
 
     if success then
-        TriggerServerEvent('tire_plug:tryRepairTire', VehToNet(vehicle), tireIndex)
+        local pedCoords = GetEntityCoords(ped)
+        TriggerServerEvent('tire_plug:tryRepairTire', netId, tireIndex, pedCoords)
     end
 end)
 
@@ -95,7 +108,9 @@ exports.ox_target:addGlobalVehicle({
         label = 'Repair Front Left Tire',
         icon = 'fa-solid fa-wrench',
         canInteract = function(entity, distance)
-            return IsVehicleTyreBurst(entity, 0, false)
+            local netId = VehToNet(entity)
+            local key = ("%s_%s"):format(netId, 0)
+            return not lockedTires[key] and IsVehicleTyreBurst(entity, 0, false)
         end,
         onSelect = function(data)
             TriggerEvent('tire_plug:attemptRepair', data.entity, 0)
@@ -107,7 +122,9 @@ exports.ox_target:addGlobalVehicle({
         label = 'Repair Front Right Tire',
         icon = 'fa-solid fa-wrench',
         canInteract = function(entity, distance)
-            return IsVehicleTyreBurst(entity, 1, false)
+            local netId = VehToNet(entity)
+            local key = ("%s_%s"):format(netId, 1)
+            return not lockedTires[key] and IsVehicleTyreBurst(entity, 1, false)
         end,
         onSelect = function(data)
             TriggerEvent('tire_plug:attemptRepair', data.entity, 1)
@@ -119,7 +136,9 @@ exports.ox_target:addGlobalVehicle({
         label = 'Repair Rear Left Tire',
         icon = 'fa-solid fa-wrench',
         canInteract = function(entity, distance)
-            return IsVehicleTyreBurst(entity, 4, false)
+            local netId = VehToNet(entity)
+            local key = ("%s_%s"):format(netId, 4)
+            return not lockedTires[key] and IsVehicleTyreBurst(entity, 4, false)
         end,
         onSelect = function(data)
             TriggerEvent('tire_plug:attemptRepair', data.entity, 4)
@@ -131,7 +150,9 @@ exports.ox_target:addGlobalVehicle({
         label = 'Repair Rear Right Tire',
         icon = 'fa-solid fa-wrench',
         canInteract = function(entity, distance)
-            return IsVehicleTyreBurst(entity, 5, false)
+            local netId = VehToNet(entity)
+            local key = ("%s_%s"):format(netId, 5)
+            return not lockedTires[key] and IsVehicleTyreBurst(entity, 5, false)
         end,
         onSelect = function(data)
             TriggerEvent('tire_plug:attemptRepair', data.entity, 5)
