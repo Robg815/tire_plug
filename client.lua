@@ -1,4 +1,4 @@
-local SCRIPT_VERSION = '1.0.1'
+local SCRIPT_VERSION = '1.0.2'
 
 AddEventHandler('onResourceStart', function(resourceName)
     if GetCurrentResourceName() == resourceName then
