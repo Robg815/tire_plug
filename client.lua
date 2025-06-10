@@ -1,4 +1,4 @@
-local SCRIPT_VERSION = '1.0.1'  -- your current script version
+local SCRIPT_VERSION = '1.0.1'
 
 AddEventHandler('onResourceStart', function(resourceName)
     if GetCurrentResourceName() == resourceName then
@@ -13,7 +13,7 @@ local tireBones = {
     [5] = "wheel_rr"
 }
 
-local lockedTires = {} -- Format: ["netId_tireIndex"] = true
+local lockedTires = {}
 
 RegisterNetEvent('tire_plug:lockTire', function(vehicleNetId, tireIndex, state)
     local key = ("%s_%s"):format(vehicleNetId, tireIndex)
@@ -42,25 +42,20 @@ RegisterNetEvent('tire_plug:attemptRepair', function(vehicle, tireIndex)
     end
 
     local ped = PlayerPedId()
-    local boneName = tireBones[tireIndex]
-    if not boneName then return end
 
-    local boneIndex = GetEntityBoneIndexByName(vehicle, boneName)
-    local boneCoords = GetWorldPositionOfEntityBone(vehicle, boneIndex)
-    local forwardVec = GetEntityForwardVector(vehicle)
-    local repairPos = boneCoords + forwardVec * 0.5
-
-    local vehCoords = GetEntityCoords(vehicle)
-    local headingToVehicle = GetHeadingFromVector_2d(vehCoords.x - repairPos.x, vehCoords.y - repairPos.y)
-
-    SetEntityCoords(ped, repairPos.x, repairPos.y, repairPos.z - 0.9, false, false, false, false)
-    SetEntityHeading(ped, headingToVehicle)
-    FreezeEntityPosition(ped, true)
-
+    -- Animation
     local dict = "anim@amb@clubhouse@tutorial@bkr_tut_ig3@"
     local anim = "machinic_loop_mechandplayer"
     RequestAnimDict(dict)
-    while not HasAnimDictLoaded(dict) do Wait(0) end
+    local timeout = GetGameTimer() + 5000
+    while not HasAnimDictLoaded(dict) do
+        if GetGameTimer() > timeout then
+            print("[tire_plug] Failed to load animation dictionary.")
+            return
+        end
+        Wait(10)
+    end
+
     TaskPlayAnim(ped, dict, anim, 8.0, -8.0, -1, 1, 0, false, false, false)
     PlaySoundFrontend(-1, "TOOLS", "MECHANIC", true)
 
@@ -71,13 +66,11 @@ RegisterNetEvent('tire_plug:attemptRepair', function(vehicle, tireIndex)
         disable = { move = true, car = true },
         onCancel = function()
             ClearPedTasks(ped)
-            FreezeEntityPosition(ped, false)
             lib.notify({ type = 'error', title = 'Cancelled', description = 'Repair was cancelled.' })
         end
     })
 
     ClearPedTasks(ped)
-    FreezeEntityPosition(ped, false)
 
     if success then
         local pedCoords = GetEntityCoords(ped)
