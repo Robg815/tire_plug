@@ -1,5 +1,3 @@
-local SCRIPT_VERSION = '1.0.3'  -- Updated version
-
 AddEventHandler('onResourceStart', function(resourceName)
     if GetCurrentResourceName() == resourceName then
         print("[script:tire_plug] Script created by Smokey (client)")
@@ -23,7 +21,7 @@ RegisterNetEvent('tire_plug:attemptRepair', function(vehicle, tireIndex)
         return
     end
 
-    local passed = lib.skillCheck({'easy', 'medium'}, {'w', 'a', 's', 'd'})
+    local passed = lib.skillCheck({ 'easy', 'medium' }, { 'w', 'a', 's', 'd' })
     if not passed then
         lib.notify({ type = 'error', title = 'Failed', description = 'You failed the skillcheck!' })
         return
@@ -53,7 +51,8 @@ RegisterNetEvent('tire_plug:attemptRepair', function(vehicle, tireIndex)
     ClearPedTasks(ped)
 
     if success then
-        TriggerServerEvent('tire_plug:tryRepairTire', VehToNet(vehicle), tireIndex)
+        local coords = GetEntityCoords(ped)
+        TriggerServerEvent('tire_plug:tryRepairTire', VehToNet(vehicle), tireIndex, coords)
     end
 end)
 
@@ -64,14 +63,8 @@ RegisterNetEvent('tire_plug:repairTire', function(vehicleNetId, tireIndex)
         return
     end
 
-    -- Ensure tire is fully restored even if shot
-    if IsVehicleTyreBurst(vehicle, tireIndex, false) then
-        SetVehicleTyreFixed(vehicle, tireIndex)
-        SetVehicleTyreCanBurst(vehicle, true)
-        SetVehicleTyreBurst(vehicle, tireIndex, false, 1000.0)
-    end
+    SetVehicleTyreFixed(vehicle, tireIndex)
 
-    -- xt-slashtires support
     if GetResourceState('xt-slashtires') == 'started' then
         local success, err = pcall(function()
             exports['xt-slashtires']:FixTire(vehicle, tireIndex)
@@ -84,14 +77,13 @@ RegisterNetEvent('tire_plug:repairTire', function(vehicleNetId, tireIndex)
     lib.notify({ type = 'success', title = 'Success', description = 'Tire repaired.' })
 end)
 
--- ox_target interactions
 exports.ox_target:addGlobalVehicle({
     {
         name = 'repair_tire_lf',
         bones = { 'wheel_lf' },
         label = 'Repair Front Left Tire',
         icon = 'fa-solid fa-wrench',
-        canInteract = function(entity, distance)
+        canInteract = function(entity)
             return IsVehicleTyreBurst(entity, 0, false)
         end,
         onSelect = function(data)
@@ -103,7 +95,7 @@ exports.ox_target:addGlobalVehicle({
         bones = { 'wheel_rf' },
         label = 'Repair Front Right Tire',
         icon = 'fa-solid fa-wrench',
-        canInteract = function(entity, distance)
+        canInteract = function(entity)
             return IsVehicleTyreBurst(entity, 1, false)
         end,
         onSelect = function(data)
@@ -115,7 +107,7 @@ exports.ox_target:addGlobalVehicle({
         bones = { 'wheel_lr' },
         label = 'Repair Rear Left Tire',
         icon = 'fa-solid fa-wrench',
-        canInteract = function(entity, distance)
+        canInteract = function(entity)
             return IsVehicleTyreBurst(entity, 4, false)
         end,
         onSelect = function(data)
@@ -127,7 +119,7 @@ exports.ox_target:addGlobalVehicle({
         bones = { 'wheel_rr' },
         label = 'Repair Rear Right Tire',
         icon = 'fa-solid fa-wrench',
-        canInteract = function(entity, distance)
+        canInteract = function(entity)
             return IsVehicleTyreBurst(entity, 5, false)
         end,
         onSelect = function(data)
