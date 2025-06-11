@@ -39,7 +39,6 @@ RegisterNetEvent('tire_plug:tryRepairTire', function(vehicleNetId, tireIndex, pe
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
 
-    -- Cooldown
     if lastRepairTime[src] and os.time() - lastRepairTime[src] < 5 then
         TriggerClientEvent('ox_lib:notify', src, {
             type = 'error',
@@ -73,7 +72,7 @@ RegisterNetEvent('tire_plug:tryRepairTire', function(vehicleNetId, tireIndex, pe
         return
     end
 
-    -- Distance Check
+    -- Proximity check (5m)
     local vehCoords = GetEntityCoords(vehicle)
     local dist = #(vehCoords - vector3(pedCoords.x, pedCoords.y, pedCoords.z))
     if dist > 5.0 then
@@ -86,11 +85,21 @@ RegisterNetEvent('tire_plug:tryRepairTire', function(vehicleNetId, tireIndex, pe
         return
     end
 
-    -- Item Check
     local hasItem = Player.Functions.GetItemByName('tire_plug')
     if hasItem and hasItem.amount > 0 then
         Player.Functions.RemoveItem('tire_plug', 1)
-        TriggerClientEvent('tire_plug:repairTire', -1, vehicleNetId, tireIndex)
+
+        -- Lock tire locally
+        local players = GetPlayers()
+        for _, id in ipairs(players) do
+            local targetPed = GetPlayerPed(id)
+            local targetCoords = GetEntityCoords(targetPed)
+            if #(targetCoords - vehCoords) < 40.0 then
+                TriggerClientEvent('tire_plug:lockTire', tonumber(id), vehicleNetId, tireIndex, true)
+                TriggerClientEvent('tire_plug:repairTire', tonumber(id), vehicleNetId, tireIndex)
+                TriggerClientEvent('tire_plug:lockTire', tonumber(id), vehicleNetId, tireIndex, false)
+            end
+        end
 
         TriggerClientEvent('ox_lib:notify', src, {
             type = 'success',
