@@ -8,7 +8,7 @@ AddEventHandler('onResourceStart', function(resourceName)
     if GetCurrentResourceName() == resourceName then
         print(("[tire_plug] Resource '%s' started successfully (Created by Smokey) - Version %s"):format(resourceName, SCRIPT_VERSION))
 
-        local versionCheckUrl = 'https://gist.githubusercontent.com/Robg815/b4d71e977dae3924ed76536b4144bbd4/raw/7e471c107a8fca8ee4a55d042959e253eaf4768f/version.json'
+        local versionCheckUrl = 'https://gist.githubusercontent.com/Robg815/b4d71e977dae3924ed76536b4144bbd4/raw/b3e683523081b16be670f64369bac7b55024791f/version.json'
 
         PerformHttpRequest(versionCheckUrl, function(statusCode, text)
             if statusCode == 200 and text then
