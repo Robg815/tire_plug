@@ -34,12 +34,12 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local lastRepairTime = {}
 local activeRepairs = {} -- Format: ["netId_tireIndex"] = true
 
-RegisterNetEvent('tire_plug:tryRepairTire', function(vehicleNetId, tireIndex)
+RegisterNetEvent('tire_plug:tryRepairTire', function(vehicleNetId, tireIndex, pedCoords)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
 
-    -- Anti-spam cooldown (5 seconds)
+    -- Cooldown
     if lastRepairTime[src] and os.time() - lastRepairTime[src] < 5 then
         TriggerClientEvent('ox_lib:notify', src, {
             type = 'error',
@@ -73,14 +73,23 @@ RegisterNetEvent('tire_plug:tryRepairTire', function(vehicleNetId, tireIndex)
         return
     end
 
+    -- Distance Check
+    local vehCoords = GetEntityCoords(vehicle)
+    local dist = #(vehCoords - vector3(pedCoords.x, pedCoords.y, pedCoords.z))
+    if dist > 5.0 then
+        activeRepairs[lockKey] = nil
+        TriggerClientEvent('ox_lib:notify', src, {
+            type = 'error',
+            title = 'Too Far',
+            description = 'You are too far from the vehicle!',
+        })
+        return
+    end
+
+    -- Item Check
     local hasItem = Player.Functions.GetItemByName('tire_plug')
     if hasItem and hasItem.amount > 0 then
         Player.Functions.RemoveItem('tire_plug', 1)
-
-        -- Lock tire for all clients before repair starts
-        TriggerClientEvent('tire_plug:lockTire', -1, vehicleNetId, tireIndex, true)
-
-        -- Broadcast repair to all clients
         TriggerClientEvent('tire_plug:repairTire', -1, vehicleNetId, tireIndex)
 
         TriggerClientEvent('ox_lib:notify', src, {
@@ -88,9 +97,6 @@ RegisterNetEvent('tire_plug:tryRepairTire', function(vehicleNetId, tireIndex)
             title = 'Success',
             description = 'Tire repaired!',
         })
-
-        -- Unlock tire after repair finished
-        TriggerClientEvent('tire_plug:lockTire', -1, vehicleNetId, tireIndex, false)
     else
         TriggerClientEvent('ox_lib:notify', src, {
             type = 'error',
