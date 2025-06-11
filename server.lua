@@ -1,4 +1,4 @@
-local SCRIPT_VERSION = '1.0.2'  -- your current script version
+local SCRIPT_VERSION = '1.0.3'
 
 local RED = '\27[31m'
 local GREEN = '\27[32m'
@@ -10,7 +10,7 @@ AddEventHandler('onResourceStart', function(resourceName)
 
         local versionCheckUrl = 'https://gist.githubusercontent.com/Robg815/b4d71e977dae3924ed76536b4144bbd4/raw/7e471c107a8fca8ee4a55d042959e253eaf4768f/version.json'
 
-        PerformHttpRequest(versionCheckUrl, function(statusCode, text, headers)
+        PerformHttpRequest(versionCheckUrl, function(statusCode, text)
             if statusCode == 200 and text then
                 local success, data = pcall(function() return json.decode(text) end)
                 if success and data and data.latest_version then
@@ -34,7 +34,7 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local lastRepairTime = {}
 local activeRepairs = {} -- Format: ["netId_tireIndex"] = true
 
-RegisterNetEvent('tire_plug:tryRepairTire', function(vehicleNetId, tireIndex, pedCoords)
+RegisterNetEvent('tire_plug:tryRepairTire', function(vehicleNetId, tireIndex)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
@@ -69,19 +69,6 @@ RegisterNetEvent('tire_plug:tryRepairTire', function(vehicleNetId, tireIndex, pe
             type = 'error',
             title = 'Error',
             description = 'Vehicle not found.',
-        })
-        return
-    end
-
-    -- Range check (5 meters)
-    local vehCoords = GetEntityCoords(vehicle)
-    local dist = #(vehCoords - vector3(pedCoords.x, pedCoords.y, pedCoords.z))
-    if dist > 5.0 then
-        activeRepairs[lockKey] = nil
-        TriggerClientEvent('ox_lib:notify', src, {
-            type = 'error',
-            title = 'Too Far',
-            description = 'You are too far from the vehicle!',
         })
         return
     end
